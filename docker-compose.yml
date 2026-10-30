@@ -1,0 +1,51 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: todo_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - PROJECT_NAME=To-Do List API
+      - DEBUG=False
+      - SECRET_KEY=CAMBIAR_ESTA_CLAVE_EN_PRODUCCION_openssl_rand_hex_32
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - DATABASE_URL=postgresql://todo_user:todo_secret_password@db:5432/todo_db
+      - ALLOWED_ORIGINS=*
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - todo_network
+
+  db:
+    image: postgres:16-alpine
+    container_name: todo_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: todo_user
+      POSTGRES_PASSWORD: todo_secret_password
+      POSTGRES_DB: todo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todo_user -d todo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - todo_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  todo_network:
+    driver: bridge
