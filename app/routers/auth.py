@@ -14,17 +14,22 @@ from app.security import (
 )
 
 router = APIRouter(
-    prefix="/auth",
     tags=["Autenticación"]
 )
 
 
 @router.post(
-    "/register",
+    "/auth/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo usuario",
     description="Crea una nueva cuenta de usuario validando que el email no esté registrado previamente."
+)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False
 )
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     # 1. Verificar si el correo ya existe
@@ -40,6 +45,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
     # 3. Crear el nuevo usuario en base de datos
     new_user = User(
+        name=user_in.name,
         email=user_in.email,
         hashed_password=hashed_pwd
     )
@@ -51,10 +57,15 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post(
-    "/login",
+    "/auth/login",
     response_model=Token,
     summary="Iniciar sesión y obtener token JWT",
     description="Autentica credenciales (email y password) utilizando OAuth2 Password Flow y retorna un token JWT Bearer."
+)
+@router.post(
+    "/login",
+    response_model=Token,
+    include_in_schema=False
 )
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -79,5 +90,6 @@ def login(
 
     return {
         "access_token": access_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user": user
     }

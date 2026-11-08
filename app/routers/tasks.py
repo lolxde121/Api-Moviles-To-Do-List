@@ -31,7 +31,7 @@ def list_tasks(
         description="Número de registros a omitir (desplazamiento para paginación)."
     ),
     limit: int = Query(
-        default=20,
+        default=50,
         ge=1,
         le=100,
         description="Número máximo de tareas a retornar (máximo 100)."
@@ -65,6 +65,8 @@ def create_task(
     new_task = Task(
         title=task_in.title,
         description=task_in.description,
+        priority=task_in.priority,
+        due_date=task_in.due_date,
         completed=task_in.completed,
         user_id=current_user.id
     )
@@ -98,7 +100,7 @@ def get_task(
     "/{id}",
     response_model=TaskResponse,
     summary="Actualizar una tarea",
-    description="Actualiza el título, descripción o estado de completado de una tarea propia."
+    description="Actualiza el título, descripción, prioridad, fecha límite o estado de completado de una tarea propia."
 )
 def update_task(
     id: int,

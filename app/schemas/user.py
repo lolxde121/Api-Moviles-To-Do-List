@@ -4,15 +4,16 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 class UserBase(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=100, description="Nombre del usuario.")
     email: EmailStr
 
 
 class UserCreate(UserBase):
     password: str = Field(
         ...,
-        min_length=6,
+        min_length=8,
         max_length=128,
-        description="Contraseña del usuario con un mínimo de 6 caracteres."
+        description="Contraseña del usuario con un mínimo de 8 caracteres."
     )
 
 
@@ -26,6 +27,7 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user: Optional[UserResponse] = None
 
 
 class TokenPayload(BaseModel):

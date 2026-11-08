@@ -14,7 +14,17 @@ class TaskBase(BaseModel):
     description: Optional[str] = Field(
         default=None,
         description="Descripción detallada de la tarea.",
-        examples=["Comprar leche, huevos y pan en el supermercado"]
+        examples=["Comprar leche, huevos y pan"]
+    )
+    priority: int = Field(
+        default=2,
+        ge=1,
+        le=3,
+        description="Nivel de prioridad: 1 = Baja, 2 = Media, 3 = Alta."
+    )
+    due_date: Optional[str] = Field(
+        default=None,
+        description="Fecha límite para completar la tarea (formato YYYY-MM-DD)."
     )
 
 
@@ -35,6 +45,16 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = Field(
         default=None,
         description="Nueva descripción de la tarea."
+    )
+    priority: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=3,
+        description="Nuevo nivel de prioridad (1-3)."
+    )
+    due_date: Optional[str] = Field(
+        default=None,
+        description="Nueva fecha límite."
     )
     completed: Optional[bool] = Field(
         default=None,
