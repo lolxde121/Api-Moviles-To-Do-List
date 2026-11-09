@@ -418,14 +418,16 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ### Direcciones de Red según el Entorno:
 - **Emulador de Android Studio**: Conectar a `http://10.0.2.2:8000/`. Android redirige automáticamente esa IP a la máquina host.
 - **Dispositivo Físico (vía Wi-Fi)**: Conectar a la IP local de tu computadora (ej: `http://192.168.1.75:8000/`).
-- **Servidor en la Nube (AWS EC2)**: Conectar a la URL pública o dominio con SSL (ej: `https://api.tudominio.com/`).
+- **Servidor en la Nube (AWS EC2)**:
+  - **HTTPS Seguro (Recomendado)**: `https://18.204.112.209.sslip.io/` o `https://18.204.112.209.nip.io/` (con certificado SSL oficial de Let's Encrypt y TLS 1.3).
+  - **HTTP Estándar**: `http://18.204.112.209/`.
 
 ---
 
 ## 10. Despliegue en AWS EC2
 
 ### Resumen del Flujo de Producción:
-1. **Instancia**: Ubuntu 22.04 / 24.04 LTS en AWS EC2 con puertos 22 (SSH), 80 (HTTP) y 443 (HTTPS) abiertos en el *Security Group*.
+1. **Instancia**: Ubuntu 24.04 LTS en AWS EC2 (`18.204.112.209`) con puertos 22 (SSH), 80 (HTTP) y 443 (HTTPS) abiertos en el *Security Group*.
 2. **Servicio Systemd (`/etc/systemd/system/fastapi-todo.service`)**:
    Mantiene el proceso Uvicorn activo en segundo plano y con reinicio automático:
    ```ini
@@ -442,10 +444,5 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    [Install]
    WantedBy=multi-user.target
    ```
-3. **Proxy Inverso Nginx (`/etc/nginx/sites-available/fastapi-todo`)**:
-   Redirige peticiones desde el puerto 80/443 hacia `http://127.0.0.1:8000`.
-4. **Certificado SSL Gratuito**:
-   ```bash
-   sudo apt install -y certbot python3-certbot-nginx
-   sudo certbot --nginx -d api.tudominio.com
-   ```
+3. **Proxy Inverso Nginx con Cifrado HTTPS (TLS 1.3 / AES-256-GCM)**:
+   Nginx escucha en los puertos 80 y 443, redirigiendo el tráfico seguro hacia `127.0.0.1:8000` con certificados SSL emitidos por Let's Encrypt y renovación automática activa mediante `certbot.timer`.
