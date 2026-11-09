@@ -1,12 +1,11 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token
+from app.schemas.user import UserCreate, UserResponse, Token, LoginRequest
 from app.security import (
     get_password_hash,
     verify_password,
@@ -60,21 +59,55 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     "/auth/login",
     response_model=Token,
     summary="Iniciar sesión y obtener token JWT",
-    description="Autentica credenciales (email y password) utilizando OAuth2 Password Flow y retorna un token JWT Bearer."
+    description=(
+        "Autentica credenciales y retorna un token JWT Bearer. "
+        "Acepta tanto JSON (body con `email` o `username` y `password`) como Form-Data estándar OAuth2."
+    )
 )
 @router.post(
     "/login",
     response_model=Token,
     include_in_schema=False
 )
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+async def login(
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    # En OAuth2PasswordRequestForm, el campo 'username' contiene el email del usuario
-    user = db.query(User).filter(User.email == form_data.username).first()
+    content_type = request.headers.get("content-type", "")
+    username = None
+    password = None
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+            username = body.get("email") or body.get("username")
+            password = body.get("password")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Formato JSON inválido."
+            )
+    else:
+        # Form-Data (OAuth2PasswordRequestForm estándar o form urlencoded)
+        try:
+            form = await request.form()
+            username = form.get("username") or form.get("email")
+            password = form.get("password")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Error al procesar los datos de formulario."
+            )
+
+    if not username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Se requiere correo ('email' o 'username') y contraseña ('password')."
+        )
+
+    user = db.query(User).filter(User.email == str(username).strip()).first()
+
+    if not user or not verify_password(str(password), user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Correo electrónico o contraseña incorrectos.",

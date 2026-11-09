@@ -17,6 +17,24 @@ class UserCreate(UserBase):
     )
 
 
+class LoginRequest(BaseModel):
+    email: Optional[EmailStr] = Field(
+        default=None,
+        description="Correo electrónico registrado",
+        examples=["usuario@ejemplo.com"]
+    )
+    username: Optional[str] = Field(
+        default=None,
+        description="Alias opcional equivalente al correo",
+        examples=["usuario@ejemplo.com"]
+    )
+    password: str = Field(
+        ...,
+        description="Contraseña del usuario",
+        examples=["Password123"]
+    )
+
+
 class UserResponse(UserBase):
     id: int
     created_at: datetime
